@@ -1,0 +1,361 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Governorate {
+  id      BigInt  @id @default(autoincrement())
+  name_ar String  @unique @db.VarChar(150)
+  name_en String? @unique @db.VarChar(150)
+
+  villages Village[]
+}
+
+model Village {
+  id                   BigInt   @id @default(autoincrement())
+  current_name_ar      String   @db.VarChar(150)
+  current_name_en      String?  @db.VarChar(150)
+  name_origin          String?  @db.Text
+  location_description String?  @db.Text
+  latitude             Decimal? @db.Decimal(9, 6)
+  longitude            Decimal? @db.Decimal(9, 6)
+  elevation            Decimal? @db.Decimal(8, 2)
+  land_area            Decimal? @db.Decimal(12, 2)
+  historical_overview  String?  @db.Text
+
+  governorate_id      BigInt
+  source_id           BigInt?
+  source              Source?   @relation(fields: [source_id], references: [id], onDelete: Restrict)
+  verification_status String    @default("PENDING") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime? @db.Timestamp(6)
+  deleted_by          BigInt?
+
+  deletedByUser User? @relation("VillageDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  governorate            Governorate       @relation(fields: [governorate_id], references: [id], onDelete: Restrict)
+  villageNames           VillageName[]
+  villageRelations       VillageRelation[] @relation("VillageRelationFrom")
+  nearbyVillageRelations VillageRelation[] @relation("VillageRelationTo")
+
+  populationRecords  PopulationRecord[]
+  historicalEvents   HistoricalEvent[]
+  landmarks          Landmark[]
+  heritageItems      HeritageItem[]
+  agricultureItems   AgricultureItem[]
+  economicActivities EconomicActivity[]
+  publicFacilities   PublicFacility[]
+}
+
+model VillageName {
+  id            BigInt    @id @default(autoincrement())
+  name          String    @db.VarChar(200)
+  language      String    @db.VarChar(50)
+  name_type     String    @db.VarChar(50)
+  village_id    BigInt
+  deleted_at    DateTime? @db.Timestamp(6)
+  deleted_by    BigInt?
+  deletedByUser User?     @relation("VillageNameDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+
+  @@unique([village_id, name, language])
+}
+
+model VillageRelation {
+  village_id        BigInt
+  nearby_village_id BigInt
+
+  village       Village @relation("VillageRelationFrom", fields: [village_id], references: [id], onDelete: Restrict)
+  nearbyVillage Village @relation("VillageRelationTo", fields: [nearby_village_id], references: [id], onDelete: Restrict)
+
+  @@id([village_id, nearby_village_id])
+}
+
+model PopulationRecord {
+  id                  BigInt    @id @default(autoincrement())
+  population_value    BigInt
+  reference_date      DateTime  @db.Date
+  reference_precision String    @default("YEAR") @db.VarChar(10)
+  village_id          BigInt
+  source_id           BigInt
+  source              Source    @relation(fields: [source_id], references: [id], onDelete: Restrict)
+  verification_status String    @default("PENDING") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime? @db.Timestamp(6)
+  deleted_by          BigInt?
+  deletedByUser       User?     @relation("PopulationRecordDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+
+  @@unique([village_id, reference_date, source_id])
+}
+
+model HistoricalEvent {
+  id          BigInt    @id @default(autoincrement())
+  title       String    @db.VarChar(200)
+  description String    @db.Text
+  event_date  DateTime? @db.Date
+  village_id  BigInt
+  source_id   BigInt
+
+  source Source @relation(fields: [source_id], references: [id], onDelete: Restrict)
+
+  verification_status String    @default("PENDING") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime? @db.Timestamp(6)
+  deleted_by          BigInt?
+  deletedByUser       User?     @relation("HistoricalEventDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+}
+
+model Landmark {
+  id                  BigInt       @id @default(autoincrement())
+  name                String       @db.VarChar(200)
+  description         String?      @db.Text
+  type                LandmarkType
+  latitude            Decimal?     @db.Decimal(9, 6)
+  longitude           Decimal?     @db.Decimal(9, 6)
+  village_id          BigInt
+  source_id           BigInt?
+  source              Source?      @relation(fields: [source_id], references: [id], onDelete: Restrict)
+  verification_status String       @default("PENDING") @db.VarChar(20)
+  created_at          DateTime     @default(now()) @db.Timestamp(6)
+  updated_at          DateTime     @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime?    @db.Timestamp(6)
+  deleted_by          BigInt?
+  deletedByUser       User?        @relation("LandmarkDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+}
+
+enum LandmarkType {
+  ARCHAEOLOGICAL_SITE
+  TRADITIONAL_BUILDING
+  SPRING
+  RELIGIOUS_SITE
+  VIEWPOINT
+  OTHER
+}
+
+model HeritageItem {
+  id          BigInt       @id @default(autoincrement())
+  name        String       @db.VarChar(200)
+  description String?      @db.Text
+  type        HeritageType
+  village_id  BigInt
+  source_id   BigInt?
+
+  source Source? @relation(fields: [source_id], references: [id], onDelete: Restrict)
+
+  verification_status String    @default("PENDING") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime? @db.Timestamp(6)
+  deleted_by          BigInt?
+  deletedByUser       User?     @relation("HeritageItemDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+}
+
+enum HeritageType {
+  CRAFT
+  FOOD
+  AGRICULTURAL_PRACTICE
+  TRADITION
+  OTHER
+}
+
+model AgricultureItem {
+  id          BigInt  @id @default(autoincrement())
+  name        String  @db.VarChar(200)
+  description String? @db.Text
+  village_id  BigInt
+  source_id   BigInt?
+
+  source Source? @relation(fields: [source_id], references: [id], onDelete: Restrict)
+
+  verification_status String    @default("PENDING") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime? @db.Timestamp(6)
+  deleted_by          BigInt?
+  deletedByUser       User?     @relation("AgricultureItemDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+}
+
+model EconomicActivity {
+  id          BigInt               @id @default(autoincrement())
+  name        String               @db.VarChar(200)
+  description String?              @db.Text
+  type        EconomicActivityType
+  village_id  BigInt
+  source_id   BigInt?
+
+  source Source? @relation(fields: [source_id], references: [id], onDelete: Restrict)
+
+  verification_status String    @default("PENDING") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime? @db.Timestamp(6)
+  deleted_by          BigInt?
+  deletedByUser       User?     @relation("EconomicActivityDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+}
+
+enum EconomicActivityType {
+  CRAFT
+  INDUSTRY
+  TRADE
+  SERVICE
+  OTHER
+}
+
+model Source {
+  id               BigInt    @id @default(autoincrement())
+  title            String    @db.VarChar(255)
+  publisher        String?   @db.VarChar(200)
+  url              String?   @db.VarChar(1000)
+  publication_date DateTime? @db.Date
+  description      String?   @db.Text
+  status           String    @default("ACTIVE") @db.VarChar(20)
+  created_at       DateTime  @default(now()) @db.Timestamp(6)
+  updated_at       DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+
+  villages           Village[]
+  populationRecords  PopulationRecord[]
+  historicalEvents   HistoricalEvent[]
+  landmarks          Landmark[]
+  heritageItems      HeritageItem[]
+  agricultureItems   AgricultureItem[]
+  economicActivities EconomicActivity[]
+  publicFacilities   PublicFacility[]
+}
+
+model User {
+  id                BigInt           @id @default(autoincrement())
+  full_name         String           @db.VarChar(200)
+  email             String           @unique @db.VarChar(255)
+  password_hash     String           @db.VarChar(255)
+  enabled           Boolean          @default(true)
+  created_at        DateTime         @default(now()) @db.Timestamp(6)
+  updated_at        DateTime         @default(now()) @updatedAt @db.Timestamp(6)
+  userRoles         UserRole[]
+  auditLogs         AuditLog[]
+  refreshTokens     RefreshToken[]
+  submittedVersions ContentVersion[] @relation("ContentVersionSubmitter")
+  reviewedVersions  ContentVersion[] @relation("ContentVersionReviewer")
+  deletedVillages   Village[]        @relation("VillageDeletedBy")
+
+  deletedVillageNames       VillageName[]      @relation("VillageNameDeletedBy")
+  deletedPopulationRecords  PopulationRecord[] @relation("PopulationRecordDeletedBy")
+  deletedHistoricalEvents   HistoricalEvent[]  @relation("HistoricalEventDeletedBy")
+  deletedLandmarks          Landmark[]         @relation("LandmarkDeletedBy")
+  deletedHeritageItems      HeritageItem[]     @relation("HeritageItemDeletedBy")
+  deletedAgricultureItems   AgricultureItem[]  @relation("AgricultureItemDeletedBy")
+  deletedEconomicActivities EconomicActivity[] @relation("EconomicActivityDeletedBy")
+  deletedPublicFacilities   PublicFacility[]   @relation("PublicFacilityDeletedBy")
+}
+
+model Role {
+  id   BigInt @id
+  name String @unique @db.VarChar(50)
+
+  userRoles UserRole[]
+}
+
+model UserRole {
+  user_id BigInt
+  role_id BigInt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [role_id], references: [id], onDelete: Cascade)
+
+  @@id([user_id, role_id])
+}
+
+model AuditLog {
+  id          BigInt   @id @default(autoincrement())
+  user_id     BigInt
+  entity_type String   @db.VarChar(100)
+  entity_id   BigInt
+  action      String   @db.VarChar(30)
+  old_value   String?  @db.Text
+  new_value   String?  @db.Text
+  timestamp   DateTime @default(now()) @db.Timestamp(6)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+}
+
+model RefreshToken {
+  id                   BigInt    @id @default(autoincrement())
+  user_id              BigInt
+  token_hash           String    @unique @db.VarChar(255)
+  expires_at           DateTime  @db.Timestamp(6)
+  revoked_at           DateTime? @db.Timestamp(6)
+  created_at           DateTime  @default(now()) @db.Timestamp(6)
+  replaced_by_token_id BigInt?
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+
+  replacedByToken RefreshToken?  @relation("TokenReplacement", fields: [replaced_by_token_id], references: [id], onDelete: SetNull)
+  previousTokens  RefreshToken[] @relation("TokenReplacement")
+}
+
+model ContentVersion {
+  id               BigInt    @id
+  entity_type      String    @db.VarChar(50)
+  entity_id        BigInt
+  version_number   Int
+  data_snapshot    Json      @db.JsonB
+  status           String    @default("PENDING") @db.VarChar(20)
+  submitted_by     BigInt
+  submitted_at     DateTime  @default(now()) @db.Timestamp(6)
+  reviewed_by      BigInt?
+  reviewed_at      DateTime? @db.Timestamp(6)
+  rejection_reason String?   @db.Text
+
+  submitter User  @relation("ContentVersionSubmitter", fields: [submitted_by], references: [id], onDelete: Restrict)
+  reviewer  User? @relation("ContentVersionReviewer", fields: [reviewed_by], references: [id], onDelete: Restrict)
+
+  @@unique([entity_type, entity_id, version_number])
+}
+
+model PublicFacility {
+  id          BigInt             @id @default(autoincrement())
+  name        String             @db.VarChar(200)
+  type        PublicFacilityType
+  description String?            @db.Text
+  latitude    Decimal?           @db.Decimal(9, 6)
+  longitude   Decimal?           @db.Decimal(9, 6)
+  village_id  BigInt
+  source_id   BigInt?
+
+  verification_status String    @default("PENDING") @db.VarChar(20)
+  created_at          DateTime  @default(now()) @db.Timestamp(6)
+  updated_at          DateTime  @default(now()) @updatedAt @db.Timestamp(6)
+  deleted_at          DateTime? @db.Timestamp(6)
+  deleted_by          BigInt?
+
+  village       Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+  source        Source? @relation(fields: [source_id], references: [id], onDelete: Restrict)
+  deletedByUser User?   @relation("PublicFacilityDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+}
+
+enum PublicFacilityType {
+  SCHOOL
+  CLINIC
+  LIBRARY
+  COMMUNITY_CENTER
+  PARK
+  SPORTS_FACILITY
+}
