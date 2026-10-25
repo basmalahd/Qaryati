@@ -1,0 +1,31 @@
+{
+  "name": "qaryati",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+  "start": "node src/server.js",
+  "dev": "node --watch src/server.js",
+  "test": "node --test"
+},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Buthaina-Jallad/Qaryati.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Buthaina-Jallad/Qaryati/issues"
+  },
+  "homepage": "https://github.com/Buthaina-Jallad/Qaryati#readme",
+  "dependencies": {
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "supertest": "^7.3.1"
+  }
+}
