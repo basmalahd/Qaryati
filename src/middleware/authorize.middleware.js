@@ -1,5 +1,9 @@
+function authorize(...roleArguments) {
+    const allowedRoles = roleArguments
+        .flat()
+        .filter((role) => typeof role === "string" && role.trim())
+        .map((role) => role.trim().toUpperCase());
 
-function authorize(...allowedRoles) {
     if (allowedRoles.length === 0) {
         throw new Error("At least one role is required");
     }
@@ -13,6 +17,8 @@ function authorize(...allowedRoles) {
 
         const userRoles = Array.isArray(req.user.roles)
             ? req.user.roles
+                .filter((role) => typeof role === "string")
+                .map((role) => role.trim().toUpperCase())
             : [];
 
         const hasPermission = allowedRoles.some(
