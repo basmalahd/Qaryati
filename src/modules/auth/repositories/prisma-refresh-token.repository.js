@@ -49,19 +49,26 @@ function createPrismaRefreshTokenRepository() {
         return mapToken(token);
     }
 
-    async function rotate(oldTokenHash, newTokenData) {
+    async function rotate({
+        oldTokenId,
+        userId,
+        newTokenHash,
+        newExpiresAt
+    }) {
+        const oldId = toBigInt(oldTokenId);
+        const userIdValue = toBigInt(userId);
+
         return prisma.$transaction(async (tx) => {
             const now = new Date();
 
             const updated = await tx.refreshToken.updateMany({
                 where: {
-                    token_hash: oldTokenHash,
+                    id: oldId,
+                    user_id: userIdValue,
                     revoked_at: null,
                     expires_at: { gt: now }
                 },
-                data: {
-                    revoked_at: now
-                }
+                data: { revoked_at: now }
             });
 
             if (updated.count !== 1) {
@@ -69,22 +76,20 @@ function createPrismaRefreshTokenRepository() {
             }
 
             const oldToken = await tx.refreshToken.findUnique({
-                where: { token_hash: oldTokenHash }
+                where: { id: oldId }
             });
 
             const newToken = await tx.refreshToken.create({
                 data: {
-                    user_id: oldToken.user_id,
-                    token_hash: newTokenData.tokenHash,
-                    expires_at: newTokenData.expiresAt
+                    user_id: userIdValue,
+                    token_hash: newTokenHash,
+                    expires_at: newExpiresAt
                 }
             });
 
             await tx.refreshToken.update({
                 where: { id: oldToken.id },
-                data: {
-                    replaced_by_token_id: newToken.id
-                }
+                data: { replaced_by_token_id: newToken.id }
             });
 
             return mapToken(newToken);
