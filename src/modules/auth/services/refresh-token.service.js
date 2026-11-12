@@ -66,12 +66,13 @@ function createRefreshTokenService(
 
         const newToken = crypto.randomBytes(32).toString("hex");
 
-        const rotated = await tokenRepository.rotate({
-            oldTokenId: storedToken.id,
-            userId: user.id,
-            newTokenHash: hashToken(newToken),
-            newExpiresAt: new Date(Date.now() + TOKEN_LIFETIME_MS)
-        });
+        const rotated = await tokenRepository.rotate(
+            hashToken(oldToken),
+            {
+                tokenHash: hashToken(newToken),
+                expiresAt: new Date(Date.now() + TOKEN_LIFETIME_MS)
+            }
+        );
 
         if (!rotated) {
             throw createError("Refresh token already used or revoked");
