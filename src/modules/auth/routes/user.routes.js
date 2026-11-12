@@ -1,9 +1,8 @@
-
 const express = require("express");
 
 const {
     createUserController
-} = require("../ controllers/user.controller");
+} = require("../controllers/user.controller");
 
 const {
     createUserService
@@ -21,7 +20,7 @@ const {
     authorize
 } = require("../../../middleware/authorize.middleware");
 
-function createUserRouter(userRepository, jwtService) {
+function createUserRouter({ userRepository, jwtService } = {}) {
     if (!userRepository || !jwtService) {
         throw new Error(
             "User repository and JWT service are required"
@@ -29,27 +28,18 @@ function createUserRouter(userRepository, jwtService) {
     }
 
     const router = express.Router();
-
     const passwordService = createPasswordService();
-
     const userService = createUserService(
         userRepository,
         passwordService
     );
-
     const userController = createUserController(userService);
-
     const authenticate = createAuthenticateMiddleware(
         jwtService,
         userRepository
     );
 
-    router.get(
-        "/me",
-        authenticate,
-        userController.getMe
-    );
-
+    router.get("/me", authenticate, userController.getMe);
     router.patch(
         "/:id/deactivate",
         authenticate,
