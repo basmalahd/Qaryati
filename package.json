@@ -2,26 +2,25 @@
   "name": "qaryati",
   "version": "1.0.0",
   "description": "Qaryati village information API",
-  "main": "index.js",
+  "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "node --test",
     "db:generate": "prisma generate",
-    "postinstall": "prisma generate",
     "pretest": "prisma generate"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Buthaina-Jallad/Qaryati.git"
+    "url": "git+https://github.com/basmalahd/Qaryati.git"
   },
   "author": "",
   "license": "ISC",
   "type": "commonjs",
   "bugs": {
-    "url": "https://github.com/Buthaina-Jallad/Qaryati/issues"
+    "url": "https://github.com/basmalahd/Qaryati/issues"
   },
-  "homepage": "https://github.com/Buthaina-Jallad/Qaryati#readme",
+  "homepage": "https://github.com/basmalahd/Qaryati#readme",
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",
     "@prisma/client": "^7.10.1",
