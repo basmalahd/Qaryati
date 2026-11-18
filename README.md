@@ -1,73 +1,72 @@
-# Qaryati
+# Qaryati — Palestinian Villages Knowledge Platform
 
-Qaryati is an Express-based backend for village information, population records, heritage, agriculture, public facilities, and related content.
+API-centric backend (Node.js 22, Express 5, Prisma 7, PostgreSQL 16) for structured, sourced and auditable information about Palestinian villages. Advanced Software Engineering — Fall 2026.
 
-## Requirements
+## Quick start (Docker)
 
-- Node.js (LTS recommended)
-- npm
-- PostgreSQL
-- Git
+```bash
+cp .env.example .env      # set DB_PASSWORD, JWT_ACCESS_SECRET (>=32 chars), SEED_* accounts
+docker compose up --build
+curl http://localhost:3000/api/v1/health
+```
+The container applies migrations and seeds roles + governorates (+ the `SEED_*` accounts) on start.
 
-## Local setup
+## Quick start (local)
 
-1. Install dependencies:
+```bash
+npm ci
+cp .env.example .env                  # DATABASE_URL, JWT_ACCESS_SECRET, SEED_*
+npx prisma generate && npx prisma migrate deploy
+npm run db:seed
+npm run dev
+```
 
-   ```bash
-   npm ci
-   ```
+## Tests
 
-2. Create a local environment file:
+```bash
+npm test                              # unit + route tests (no database needed)
+RUN_DB_TESTS=1 npm test               # + end-to-end flow against a real PostgreSQL
+```
 
-   ```bash
-   cp .env.example .env
-   ```
+## Domain rules (how data quality is handled)
 
-   On Windows PowerShell, use `Copy-Item .env.example .env`.
+* **Nothing is published directly.** Creating a village / population record creates a `PENDING` draft plus a `ContentVersion` snapshot. Edits (`PUT`/`PATCH`) create a pending version only — the live row is untouched.
+* A **VERIFIER** (or ADMIN) approves/rejects at `POST /api/v1/review/versions/{id}/approve|reject`. Approval applies the snapshot atomically (row lock + transaction) and writes an audit entry. Rejection needs a reason.
+* **Maker–checker:** the reviewer must differ from the submitter (enforced in the service *and* by a DB CHECK).
+* Only one pending version per entity (partial unique index) — concurrent edits get `409`, never a silent overwrite.
+* Every change writes to `AuditLog` (who, what, when, old/new value) in the same transaction as the change.
+* Public endpoints only ever return `VERIFIED`, non-deleted rows. Deletes are soft deletes.
 
-3. Set the values in `.env`:
+| Role | Can |
+|---|---|
+| anonymous | read published data |
+| EDITOR | propose creates/edits, manage sources |
+| VERIFIER | review (approve/reject) proposals |
+| ADMIN | everything incl. soft delete/restore, governorates |
 
-   - `DATABASE_URL`: PostgreSQL connection string for your local database.
-   - `JWT_ACCESS_SECRET`: a private random secret of at least 32 characters. Do not commit it.
-   - `NODE_ENV`: use `development` locally.
-   - `PORT`: HTTP port (default: 3000).
+## API (all under `/api/v1`)
 
-4. Generate the Prisma Client:
+| Area | Endpoints |
+|---|---|
+| Auth | `POST /auth/login`, `/auth/refresh`, `/auth/logout`, `GET /users/me` |
+| Villages | `GET/POST /villages`, `GET/PUT/PATCH/DELETE /villages/{id}`, `GET /villages/{id}/overview`, `POST /villages/{id}/restore`, `GET /admin/villages` (deleted) |
+| Search | `GET /villages?q=&governorate_id=&min_population=&max_population=&has_landmarks=&sort=-population,current_name_ar&page=&size=` |
+| Names / nearby | `/villages/{id}/names[/{nameId}]`, `/villages/{id}/nearby[/{otherId}]` |
+| Population history | `/villages/{id}/population-records[/{recordId}|/latest]` |
+| Governorates | `/governorates`, `/governorates/{id}/villages` |
+| Review | `GET /review/versions`, `POST /review/versions/{id}/approve|reject` |
+| Supporting content (read) | `/landmarks`, `/heritage-items`, `/agriculture-items`, `/economic-activities`, `/public-facilities`, `/historical-events`, `/sources` |
 
-   ```bash
-   npm run db:generate
-   ```
+Errors use `application/problem+json` with an `error_code` (`VALIDATION_ERROR`, `RESOURCE_NOT_FOUND`, `DUPLICATE_*`, `ACCESS_DENIED`, `RATE_LIMITED`, …).
 
-5. Apply committed migrations to the configured database:
+## Load testing (k6)
 
-   ```bash
-   npx prisma migrate deploy
-   ```
+```bash
+k6 run -e BASE_URL=http://localhost:3000 perf/read-villages.js
+k6 run -e BASE_URL=http://localhost:3000 -e EMAIL=admin@... -e PASSWORD=... perf/write-villages.js
+```
+Run against a seeded database of realistic size, record avg / p95 / throughput / error rate, then compare before/after one indexing or caching change (see `docs/performance-report.md`).
 
-6. Start the API:
+## Architecture
 
-   ```bash
-   npm run dev
-   ```
-
-The health endpoint is `GET http://localhost:3000/api/v1/health`.
-
-## Useful commands
-
-- `npm test` — run the automated test suite.
-- `npm run db:generate` — generate the Prisma Client.
-- `npm start` — start the server.
-- `npm run dev` — start with Node.js watch mode.
-
-## Environment and security
-
-- Never commit `.env`, database passwords, JWT secrets, or production credentials.
-- Use a unique, cryptographically random `JWT_ACCESS_SECRET` in each environment.
-- Use a least-privilege PostgreSQL account for deployments rather than the local superuser.
-- Do not expose stack traces or database error details to API clients.
-
-## Current implementation notes
-
-The repository contains several domain modules with dependency-injected routers and services. A module is not available over HTTP merely because its files exist: its router, repository implementations, and dependencies must be registered in `src/app.js`. Verify route registration and end-to-end coverage before treating any module as production-ready.
-
-Database-backed integration tests require a reachable PostgreSQL database configured through `DATABASE_URL`. Keep test data isolated from production data.
+See `docs/architecture.md` and the ADRs in `docs/adr/`.

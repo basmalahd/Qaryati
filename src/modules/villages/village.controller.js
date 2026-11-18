@@ -2,7 +2,7 @@
 
 const { idParamSchema, listQuerySchema, createVillageSchema, replaceVillageSchema, patchVillageSchema, deletedVillageQuerySchema } = require('./village.dto');
 const { badRequest } = require('../../shared/http/problem');
-const { mapVillage, mapPage } = require('./village.mapper');
+const { mapVillage, mapOverview, mapPage } = require('./village.mapper');
 
 function parse(schema, value) {
   const result = schema.safeParse(value);
@@ -16,7 +16,7 @@ class VillageController {
   list = async (req, res) => res.status(200).json(mapPage(await this.service.list(parse(listQuerySchema, req.query)), mapVillage));
   listDeleted = async (req, res) => res.status(200).json(mapPage(await this.service.listDeleted(parse(deletedVillageQuerySchema, req.query)), mapVillage));
   get = async (req, res) => res.status(200).json(villageResponse({ data: await this.service.get(parse(idParamSchema, req.params).id) }));
-  overview = async (req, res) => res.status(200).json(villageResponse({ data: await this.service.overview(parse(idParamSchema, req.params).id) }));
+  overview = async (req, res) => res.status(200).json({ data: mapOverview(await this.service.overview(parse(idParamSchema, req.params).id)) });
   create = async (req, res) => {
     const result = await this.service.createDraft(parse(createVillageSchema, req.body), req.user.id);
     res.location(`/api/v1/villages/${result.village.id}`).status(201).json({ data: { ...mapVillage(result.village), pending_version_id: String(result.version.id) } });

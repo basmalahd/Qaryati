@@ -49,6 +49,10 @@ model Village {
   agricultureItems   AgricultureItem[]
   economicActivities EconomicActivity[]
   publicFacilities   PublicFacility[]
+
+  @@index([governorate_id])
+  @@index([verification_status, deleted_at])
+  @@index([current_name_ar])
 }
 
 model VillageName {
@@ -64,6 +68,9 @@ model VillageName {
   village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
 
   @@unique([village_id, name, language])
+
+  @@index([village_id])
+  @@index([name])
 }
 
 model VillageRelation {
@@ -74,6 +81,8 @@ model VillageRelation {
   nearbyVillage Village @relation("VillageRelationTo", fields: [nearby_village_id], references: [id], onDelete: Restrict)
 
   @@id([village_id, nearby_village_id])
+
+  @@index([nearby_village_id])
 }
 
 model PopulationRecord {
@@ -94,6 +103,9 @@ model PopulationRecord {
   village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
 
   @@unique([village_id, reference_date, source_id])
+
+  @@index([village_id, reference_date])
+  @@index([source_id])
 }
 
 model HistoricalEvent {
@@ -114,6 +126,8 @@ model HistoricalEvent {
   deletedByUser       User?     @relation("HistoricalEventDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
 
   village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+
+  @@index([village_id])
 }
 
 model Landmark {
@@ -134,6 +148,8 @@ model Landmark {
   deletedByUser       User?        @relation("LandmarkDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
 
   village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+
+  @@index([village_id])
 }
 
 enum LandmarkType {
@@ -163,6 +179,8 @@ model HeritageItem {
   deletedByUser       User?     @relation("HeritageItemDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
 
   village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+
+  @@index([village_id])
 }
 
 enum HeritageType {
@@ -190,6 +208,8 @@ model AgricultureItem {
   deletedByUser       User?     @relation("AgricultureItemDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
 
   village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+
+  @@index([village_id])
 }
 
 model EconomicActivity {
@@ -210,6 +230,8 @@ model EconomicActivity {
   deletedByUser       User?     @relation("EconomicActivityDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
 
   village Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
+
+  @@index([village_id])
 }
 
 enum EconomicActivityType {
@@ -294,6 +316,9 @@ model AuditLog {
   timestamp   DateTime @default(now()) @db.Timestamp(6)
 
   user User @relation(fields: [user_id], references: [id], onDelete: Restrict)
+
+  @@index([entity_type, entity_id])
+  @@index([user_id])
 }
 
 model RefreshToken {
@@ -309,10 +334,12 @@ model RefreshToken {
 
   replacedByToken RefreshToken?  @relation("TokenReplacement", fields: [replaced_by_token_id], references: [id], onDelete: SetNull)
   previousTokens  RefreshToken[] @relation("TokenReplacement")
+
+  @@index([user_id])
 }
 
 model ContentVersion {
-  id               BigInt    @id
+  id               BigInt    @id @default(autoincrement())
   entity_type      String    @db.VarChar(50)
   entity_id        BigInt
   version_number   Int
@@ -328,6 +355,8 @@ model ContentVersion {
   reviewer  User? @relation("ContentVersionReviewer", fields: [reviewed_by], references: [id], onDelete: Restrict)
 
   @@unique([entity_type, entity_id, version_number])
+
+  @@index([status, entity_type])
 }
 
 model PublicFacility {
@@ -349,6 +378,8 @@ model PublicFacility {
   village       Village @relation(fields: [village_id], references: [id], onDelete: Restrict)
   source        Source? @relation(fields: [source_id], references: [id], onDelete: Restrict)
   deletedByUser User?   @relation("PublicFacilityDeletedBy", fields: [deleted_by], references: [id], onDelete: Restrict)
+
+  @@index([village_id])
 }
 
 enum PublicFacilityType {

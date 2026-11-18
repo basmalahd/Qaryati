@@ -29,9 +29,10 @@ test("Unknown endpoint returns 404 Problem Details", async () => {
 
   assert.deepEqual(response.body, {
     type: "about:blank",
-    title: "Request Error",
+    title: "Not Found",
     status: 404,
     detail: "The requested endpoint does not exist.",
-    instance: "/api/v1/not-found"
+    instance: "/api/v1/not-found",
+    error_code: "RESOURCE_NOT_FOUND"
   });
 });
