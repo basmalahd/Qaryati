@@ -1,3 +1,4 @@
+const { sendProblem } = require("../shared/http/send-problem");
 function authorize(...roleArguments) {
     const allowedRoles = roleArguments
         .flat()
@@ -10,9 +11,7 @@ function authorize(...roleArguments) {
 
     return function authorizeMiddleware(req, res, next) {
         if (!req.user) {
-            return res.status(401).json({
-                message: "Authentication required"
-            });
+            return sendProblem(req, res, 401, "Unauthorized", "Authentication required", "AUTHENTICATION_REQUIRED");
         }
 
         const userRoles = Array.isArray(req.user.roles)
@@ -26,9 +25,7 @@ function authorize(...roleArguments) {
         );
 
         if (!hasPermission) {
-            return res.status(403).json({
-                message: "Access denied"
-            });
+            return sendProblem(req, res, 403, "Forbidden", "Access denied", "ACCESS_DENIED");
         }
 
         return next();

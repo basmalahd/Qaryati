@@ -8,6 +8,7 @@ const findAll = async ({
 } = {}) => {
   const where = {
     deleted_at: null,
+    verification_status: 'VERIFIED',
   };
 
   if (villageId !== undefined) {
@@ -29,6 +30,7 @@ const findById = async (id) => {
     where: {
       id: BigInt(id),
       deleted_at: null,
+    verification_status: 'VERIFIED',
     },
   });
 };

@@ -21,15 +21,15 @@ const {
     createJwtService
 } = require("../services/jwt.service");
 
-function createPrismaRoutes() {
+function createPrismaRoutes({ userRepository: sharedUsers, tokenRepository: sharedTokens, jwtService: sharedJwt } = {}) {
     const router = express.Router();
 
-    const userRepository = createPrismaUserRepository();
+    const userRepository = sharedUsers || createPrismaUserRepository();
 
     const tokenRepository =
-        createPrismaRefreshTokenRepository();
+        sharedTokens || createPrismaRefreshTokenRepository();
 
-    const jwtService = createJwtService(
+    const jwtService = sharedJwt || createJwtService(
         process.env.JWT_ACCESS_SECRET
     );
 

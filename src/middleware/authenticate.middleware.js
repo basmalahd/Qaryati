@@ -1,3 +1,4 @@
+const { sendProblem } = require("../shared/http/send-problem");
 
 function createAuthenticateMiddleware(jwtService, userRepository) {
     return async function authenticate(req, res, next) {
@@ -8,17 +9,13 @@ function createAuthenticateMiddleware(jwtService, userRepository) {
                 typeof authorization !== "string" ||
                 !authorization.startsWith("Bearer ")
             ) {
-                return res.status(401).json({
-                    message: "Authentication required"
-                });
+                return sendProblem(req, res, 401, "Unauthorized", "Authentication required", "AUTHENTICATION_REQUIRED");
             }
 
             const token = authorization.slice(7).trim();
 
             if (!token) {
-                return res.status(401).json({
-                    message: "Authentication required"
-                });
+                return sendProblem(req, res, 401, "Unauthorized", "Authentication required", "AUTHENTICATION_REQUIRED");
             }
 
             let payload;
@@ -26,17 +23,13 @@ function createAuthenticateMiddleware(jwtService, userRepository) {
             try {
                 payload = jwtService.verify(token);
             } catch {
-                return res.status(401).json({
-                    message: "Invalid or expired token"
-                });
+                return sendProblem(req, res, 401, "Unauthorized", "Invalid or expired token", "AUTHENTICATION_REQUIRED");
             }
 
             const user = await userRepository.findById(payload.sub);
 
             if (!user || !user.enabled) {
-                return res.status(401).json({
-                    message: "Invalid or inactive user"
-                });
+                return sendProblem(req, res, 401, "Unauthorized", "Invalid or inactive user", "AUTHENTICATION_REQUIRED");
             }
 
             req.user = {

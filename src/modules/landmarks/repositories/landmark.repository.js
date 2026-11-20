@@ -4,6 +4,7 @@ const prisma = require('../../../config/prisma.config');
 const findAll = async ({ villageId, limit = 20, offset = 0 } = {}) => {
   const where = {
     deleted_at: null,
+    verification_status: 'VERIFIED',
   };
 
   if (villageId !== undefined) {
@@ -25,6 +26,7 @@ const findById = async (id) => {
     where: {
       id: BigInt(id),
       deleted_at: null,
+    verification_status: 'VERIFIED',
     },
   });
 };

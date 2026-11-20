@@ -7,5 +7,10 @@ function mapVillage(row) {
   for (const field of ['id', 'governorate_id', 'source_id']) if (dto[field] != null) dto[field] = String(dto[field]);
   return dto;
 }
+// The overview keeps the village fields and nests related collections; ids become strings.
+const stringifyIds = (row) => (Array.isArray(row) ? row.map(stringifyIds) : row && typeof row === 'object' && !(row instanceof Date)
+  ? Object.fromEntries(Object.entries(row).map(([k, v]) => [k, (k === 'id' || k.endsWith('_id')) && v != null && typeof v !== 'object' ? String(v) : stringifyIds(v)]))
+  : row);
+function mapOverview(row) { return row ? stringifyIds(row) : row; }
 function mapPage(result, mapper) { return { ...result, data: (result.data || []).map(mapper) }; }
-module.exports = { mapVillage, mapPage };
+module.exports = { mapVillage, mapOverview, mapPage };

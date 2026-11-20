@@ -1,14 +1,18 @@
+'use strict';
 
 const express = require('express');
 const controller = require('../controllers/source.controller');
 
-const router = express.Router();
+// Reads are public; every state-changing route requires an authenticated EDITOR/ADMIN.
+function createSourceRouter({ authenticate, authorize }) {
+  const router = express.Router();
+  const editors = [authenticate, authorize(['EDITOR', 'ADMIN'])];
+  router.get('/', controller.getSources);
+  router.get('/:id', controller.getSourceById);
+  router.post('/', ...editors, controller.createSource);
+  router.patch('/:id/archive', ...editors, controller.archiveSource);
+  router.patch('/:id/reactivate', ...editors, controller.reactivateSource);
+  return router;
+}
 
-router.get('/', controller.getSources);
-router.get('/:id', controller.getSourceById);
-router.post('/', controller.createSource);
-
-router.patch('/:id/archive', controller.archiveSource);
-router.patch('/:id/reactivate', controller.reactivateSource);
-
-module.exports = router;
+module.exports = { createSourceRouter };
